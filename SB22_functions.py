@@ -5,7 +5,9 @@ import pandas as pd
 
 
 ### BPRP to B-V OR MASS CONVERSIONS
-# We used a 1 Gyr PARSEC isochrone to do the conversions, we obtained the isochrone using the amazing CMD 3.6 web app (http://stev.oapd.inaf.it/cmd). We only changed the isochrone Age and the output photometric system, leaving all other parameters as default.
+# We used a 1 Gyr PARSEC isochrone to do the conversions, we obtained the isochrone using the amazing CMD 3.6 web app (http://stev.oapd.inaf.it/cmd). 
+# We only changed the isochrone Age and the output photometric system, leaving all other parameters as default. 
+# For more information, check the files headers in the PARSEC_isochrones folder.
 PARSEC_gaia = pd.read_csv('PARSEC_isochrones/PARSEC_iso_1gyr_gaia', comment='#')
 PARSEC_BV = pd.read_csv('PARSEC_isochrones/PARSEC_iso_1gyr_BV', comment='#')
 PARSEC_gaia = PARSEC_gaia[(PARSEC_gaia['label']<2)] # only used PMS and MS.
