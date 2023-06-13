@@ -5,9 +5,7 @@ import pandas as pd
 
 
 ### BPRP to B-V OR MASS CONVERSIONS
-# We used a 1 Gyr PARSEC isochrone to do the conversions, we obtained the isochrone using the amazing CMD 3.6 web app (http://stev.oapd.inaf.it/cmd). 
-# We only changed the isochrone Age and the output photometric system, leaving all other parameters as default. 
-# For more information, check the files headers in the PARSEC_isochrones folder.
+# We used a 1 Gyr PARSEC isochrone to do the conversions, we obtained the isochrone using the amazing CMD 3.6 web app (http://stev.oapd.inaf.it/cmd). We only changed the isochrone Age and the output photometric system, leaving all other parameters as default. For more information, check the files headers in the PARSEC_isochrones folder.
 PARSEC_gaia = pd.read_csv('PARSEC_isochrones/PARSEC_iso_1gyr_gaia', comment='#')
 PARSEC_BV = pd.read_csv('PARSEC_isochrones/PARSEC_iso_1gyr_BV', comment='#')
 PARSEC_gaia = PARSEC_gaia[(PARSEC_gaia['label']<2)] # only used PMS and MS.
@@ -20,7 +18,7 @@ bprp_to_mass_PARSEC = interp1d(bprp_color_PARSEC, PARSEC_gaia['Mass'])
 mass_to_bprp_PARSEC = interp1d(PARSEC_gaia['Mass'], bprp_color_PARSEC)
 
 ### GYROCHRONOLOGY RELATIONS ###
-def bpl_model(bprp, age, br=.43):
+def bpl_model(bprp, age, br=.43): # AKA A19
     '''Inputs Gaia G_BP-G_RP color and Age (in yr), returns P_rot (in days)
     Inputs can be either both arrays of same size, bprp an array and age a float, or both floats
     
@@ -45,7 +43,7 @@ def bpl_model(bprp, age, br=.43):
     return 10**logp
 
 
-def isochrone2015(BV, age): 
+def isochrone2015(BV, age): # AKA A15 
     '''Inputs B-V color and Age (in Myr), returns P_rot (in days)
     
     Equation from Angus et al. (2015)'''
@@ -89,7 +87,7 @@ prots = np.array([[ 9.69,  9.76, 10.94, 14.87, 15.95, 17.1 , 18.24, 19.99, 21.54
        [ 2.75,  2.77,  2.78,  2.82,  2.84,  2.86,  2.89,  2.97,  3.05,
          3.12,  3.17,  3.35,  3.58,  3.96,  4.69, 10.86, 10.86]])
 SL20_interp_mass = interp2d(masses, ages, prots.transpose(), bounds_error=True)
-def SL20_model_mass(mass, age):
+def SL20_model_mass(mass, age): # AKA SL20
     '''Inputs Mass (in M_sun) and Age (in Gyr), returns P_rot (in days)
     
     Function is a 2D interpolation of Table A1 from Spada & Lanzafame (2020)'''
@@ -163,25 +161,21 @@ def gyro_check(bprp_1, prot_1, bprp_2, prot_2, iso = 'A19'):
     '''Inputs Gaia color G_BP - G_RP and Prot (in days) from both components of a pair, returns DeltaProtGyro (in days)
     All inputs must be numpy arrays of the same size!
     iso (default \'A19\'): str, can be either \'A19\' for the Angus et al (2019) relation,  \'A15\' for the Angus et al (2015) relation, or \'SL20\' for the Spada & Lanzafame (2020) relation.'''
-    if iso == 'A19':
-        age_1 = solve_isochrone(bprp_1, prot_1, iso=iso)
-        delta_prot = prot_2 - bpl_model(bprp_2, age_1)
-        ret = []
-        for i in delta_prot:
-            ret.append(i)
-        return np.array(ret)
-        
+    
+    if iso=='A19':
+        p = [-38.96093821359645, 28.71101008315462, -4.91903824593666, 0.7160561986000329, -
+         4.716546365981507, 0.6470642123725334, -13.55890448246179, 0.9361999874258322]
+
+        logP2 = np.log10(prot_1) + np.polyval(p[:5], np.log10(bprp_2)) - np.polyval(p[:5], np.log10(bprp_1))
+        return prot_2 - 10**logP2
+
     elif iso=='A15':
-        bv_2 = bprp_to_bv_PARSEC(bprp_2)
-        age_1 = solve_isochrone(bprp_1, prot_1, iso=iso)
-        delta_prot = prot_2 - isochrone2015(bv_2, age_1)
-        ret = []
-        for i in delta_prot:
-            if not np.isnan(i):
-                ret.append(float(i))
-            else:
-                ret.append(np.nan)
-        return np.array([float(i) for i in ret])
+        c = 0.45
+        b = 0.31
+        BV_1 = bprp_to_bv_PARSEC(bprp_1)
+        BV_2 = bprp_to_bv_PARSEC(bprp_2)
+        p2 = prot_1 * ((BV_2 - c)/(BV_1 - c))**b
+        return prot_2 - p2
         
     elif iso == 'SL20':
         mass_2 = bprp_to_mass_PARSEC(bprp_2)
@@ -198,26 +192,36 @@ def sigma_Delta_P_rot_gyro(bprp_1, prot_1, e_prot_1, bprp_2, e_prot_2, iso='A19'
     sigma_delta = np.sqrt(sigma_prot_2_catalog**2 + e_prot_2**2)
     return sigma_delta
 
-
 def prop_error_iso(BPRP_1, prot_1, e_prot_1, BPRP_2, iso='A19'): # A15 for Angus et al. (2015) lines, A19 for Angus et al. (2019)
     '''Inputs Gaia color G_BP - G_RP, Prot (in days) and its error (in days), returns error propagated across the gyrochrone (in days)
         All inputs must be numpy arrays of the same size!
     iso (default \'A19\'): str, can be either \'A19\' for the Angus et al (2019) relation,  \'A15\' for the Angus et al (2015) relation, or \'SL20\' for the Spada & Lanzafame (2020) relation.'''
 
     if iso == 'A15':
-        age_plus = solve_isochrone(BPRP_1, prot_1 + e_prot_1, iso='A15')
-        age_minus = solve_isochrone(BPRP_1, prot_1 - e_prot_1, iso='A15')
+        c = 0.45
+        sigma_b = 0.3
         BV_1 = bprp_to_bv_PARSEC(BPRP_1)
         BV_2 = bprp_to_bv_PARSEC(BPRP_2)
-        prot_plus = isochrone2015(BV_2, age_plus)
-        prot_minus = isochrone2015(BV_2, age_minus)
-        return (prot_plus - prot_minus) / 2
+        age_1 = solve_isochrone(BPRP_1, prot_1, iso=iso)
+        P2 = isochrone2015(BV_2, age_1)
+        return P2 * np.sqrt(e_prot_1**2/prot_1**2 + sigma_b**2 * np.log((BV_2-c)/(BV_1-c))**2)
+
     elif iso == 'A19':
-        age_plus = solve_isochrone(BPRP_1, prot_1 + e_prot_1, iso='A19')
-        age_minus = solve_isochrone(BPRP_1, prot_1 - e_prot_1, iso='A19')
-        prot_plus = bpl_model(BPRP_2, age_plus)
-        prot_minus = bpl_model(BPRP_2, age_minus)
-        return (prot_plus - prot_minus) / 2
+        prot_comp = e_prot_1/(prot_1*np.log(10))
+        c0 = 0.458
+        c1 = 0.0585
+        c2 = 0.217
+        c3 = 1.508
+        c4 = 3.309
+        x0 = 0
+        x1 = c1*(np.log10(BPRP_2)-np.log10(BPRP_1))
+        x2 = c2*(np.log10(BPRP_2)**2-np.log10(BPRP_1)**2)
+        x3 = c3*(np.log10(BPRP_2)**3-np.log10(BPRP_1)**3)
+        x4 = c4*(np.log10(BPRP_2)**4-np.log10(BPRP_1)**4)
+        age_1 = solve_isochrone(BPRP_1, prot_1, iso=iso)
+        prot2_exp = bpl_model(BPRP_2, age_1)
+        return prot2_exp * np.log(10) * np.sqrt(prot_comp**2 + x0**2 + x1**2 + x2**2 + x3**2 + x4**2)
+
     elif iso == 'SL20':
         age_plus = solve_isochrone(BPRP_1, prot_1 + e_prot_1, iso='SL20')
         age_minus = solve_isochrone(BPRP_1, prot_1 - e_prot_1, iso='SL20')
@@ -232,7 +236,7 @@ def solve_x(bprp_1, prot_1, e_prot_1, bprp_2, prot_2, e_prot_2, iso='A19'):
     '''Inputs Gaia color G_BP - G_RP, Prot (in days) and its error (in days), for each component of the pair, returns the pairs x-parameter
         All inputs must be numpy arrays of the same size!
     iso (default \'A19\'): str, can be either \'A19\' for the Angus et al (2019) relation,  \'A15\' for the Angus et al (2015) relation, or \'SL20\' for the Spada & Lanzafame (2020) relation. '''
-
+    
     check_catalog = gyro_check(bprp_1, prot_1, bprp_2, prot_2, iso=iso)
     sigma_delta = sigma_Delta_P_rot_gyro(bprp_1,prot_1, e_prot_1, bprp_2, e_prot_2, iso=iso)
     return abs(check_catalog / sigma_delta)
