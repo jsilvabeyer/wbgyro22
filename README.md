@@ -1,6 +1,6 @@
-# Silva-Beyer, Godoy-Rivera & Chanamé 2022
+# Silva-Beyer, Godoy-Rivera & Chanamé 2023
 
-Supplementary data and files for Silva-Beyer et al. 2022
+Supplementary data and files for Silva-Beyer et al. 2023 ([ADS link](https://ui.adsabs.harvard.edu/abs/2022arXiv221001137S))
 
 <br />
 
