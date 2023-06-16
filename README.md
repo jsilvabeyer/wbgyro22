@@ -4,7 +4,7 @@ Supplementary data and files for Silva-Beyer et al. 2023 ([ADS link](https://ui.
 
 <br />
 
-SB22_functions.py contains all the functions necessary to calculate a gyrochronal age (```solve_isochrone``` function), Delta_P_rot_gyro (```gyro_check``` function), and the x-parameter (```solve_x``` function), used in the paper.
+SB23_functions.py contains all the functions necessary to calculate a gyrochronal age (```solve_isochrone``` function), Delta_P_rot_gyro (```gyro_check``` function), and the x-parameter (```solve_x``` function), used in the paper.
 
 The PARSEC_isochrones folder contains the PARSEC isochrones used in the paper to convert BP-RP color into B-V color and stellar Mass. They are used extensively in the functions file. For more information about the isochrone parameters, check the headers of each file. 
 
